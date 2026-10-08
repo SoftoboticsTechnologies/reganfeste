@@ -4,7 +4,7 @@
    ========================================================= */
 
 :root {
-  --rf-navy: #242a56;        /* hero overlay, footer */
+  --rf-navy: #242a56;        
   --rf-dark: #292c3a;        /* headings, CTA, card overlays */
   --rf-ink: #0e0e30;         /* deepest navy */
   --rf-light: #f8f8fb;       /* soft section background */
