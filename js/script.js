@@ -16,6 +16,31 @@
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var mqDesktop = window.matchMedia('(min-width: 1081px)');
 
+  /* ---------- Sticky header: solid bar once the page scrolls ---------- */
+  var header = document.querySelector('.site-header');
+  if (header) {
+    var ticking = false;
+    var updateHeader = function () {
+      header.classList.toggle('is-scrolled', window.scrollY > 24);
+      ticking = false;
+    };
+    window.addEventListener('scroll', function () {
+      if (!ticking) { ticking = true; requestAnimationFrame(updateHeader); }
+    }, { passive: true });
+    updateHeader();
+  }
+
+  /* ---------- Footer attribution: text fallback if the logo can't load ---------- */
+  var poweredImg = document.querySelector('.powered-by img');
+  if (poweredImg) {
+    var showPoweredName = function () {
+      poweredImg.hidden = true;
+      poweredImg.nextElementSibling.hidden = false;
+    };
+    if (poweredImg.complete && poweredImg.naturalWidth === 0) showPoweredName();
+    else poweredImg.addEventListener('error', showPoweredName);
+  }
+
   /* ---------- Mobile navigation ---------- */
   var nav = document.getElementById('main-nav');
   var toggle = document.querySelector('.nav-toggle');
