@@ -8,7 +8,7 @@
   var FORM_ENDPOINT = 'sendmail.php';
   // Business WhatsApp number as used on the live site (country code, no "+").
   var WHATSAPP_NUMBER = '919480808099';
-  var HERO_INTERVAL_MS = 5000;
+  var HERO_INTERVAL_MS = 5500;
   // Contact page form API. The browser sends the site's Origin, which the API uses
   // to identify the registered website (reganfeste.in, incl. www).
   var CONTACT_API_URL = 'https://k5iewetbri.execute-api.ap-south-1.amazonaws.com/prod/contact';
@@ -16,7 +16,7 @@
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var mqDesktop = window.matchMedia('(min-width: 1081px)');
 
-  /* ---------- Sticky header: solid bar once the page scrolls ---------- */
+  /* ---------- Fixed header: deeper shadow once the page scrolls ---------- */
   var header = document.querySelector('.site-header');
   if (header) {
     var ticking = false;
@@ -139,9 +139,17 @@
   });
 
   /* ---------- Hero background slideshow ---------- */
-  var slides = document.querySelectorAll('.hero-slide');
-  if (slides.length > 1 && !reduceMotion) {
+  var hero = document.querySelector('.hero');
+  var slides = hero ? hero.querySelectorAll('.hero-slide') : [];
+  if (slides.length > 1) {
     var current = 0;
+    var timer = null;
+    var hovered = false;
+    var focused = false;
+    var dots = hero.querySelectorAll('.hero-dot');
+    var prevBtn = hero.querySelector('.hero-prev');
+    var nextBtn = hero.querySelector('.hero-next');
+    var dotsWrap = hero.querySelector('.hero-dots');
 
     var loadSlide = function (slide) {
       var src = slide.getAttribute('data-bg');
@@ -161,17 +169,56 @@
       img.src = src;
     };
 
-    window.addEventListener('load', function () { preload(1); });
-
-    setInterval(function () {
-      if (document.hidden) return;
-      var next = (current + 1) % slides.length;
+    var goTo = function (index) {
+      var next = (index + slides.length) % slides.length;
+      if (next === current) return;
       loadSlide(slides[next]);
       slides[current].classList.remove('is-active');
       slides[next].classList.add('is-active');
+      if (dots[current]) dots[current].removeAttribute('aria-current');
+      if (dots[next]) dots[next].setAttribute('aria-current', 'true');
       current = next;
       preload((next + 1) % slides.length);
-    }, HERO_INTERVAL_MS);
+    };
+
+    // Autoplay only when motion is allowed, and never while the visitor is
+    // pointing at or tabbing through the hero.
+    var stop = function () { clearInterval(timer); timer = null; };
+    var start = function () {
+      stop();
+      if (reduceMotion || hovered || focused) return;
+      timer = setInterval(function () {
+        if (!document.hidden) goTo(current + 1);
+      }, HERO_INTERVAL_MS);
+    };
+
+    if (prevBtn) prevBtn.addEventListener('click', function () { goTo(current - 1); start(); });
+    if (nextBtn) nextBtn.addEventListener('click', function () { goTo(current + 1); start(); });
+    Array.prototype.forEach.call(dots, function (dot, i) {
+      dot.addEventListener('click', function () { goTo(i); start(); });
+    });
+    [prevBtn, nextBtn, dotsWrap].forEach(function (el) { if (el) el.hidden = false; });
+
+    // Mouse only: a tap fires enter without a matching leave, which would stall autoplay
+    hero.addEventListener('pointerenter', function (e) {
+      if (e.pointerType === 'mouse') { hovered = true; stop(); }
+    });
+    hero.addEventListener('pointerleave', function (e) {
+      if (e.pointerType === 'mouse') { hovered = false; start(); }
+    });
+    // Keyboard focus only, so tapping a dot doesn't leave the slideshow paused
+    var keyboardFocus = function (el) {
+      try { return el.matches(':focus-visible'); } catch (err) { return true; }
+    };
+    hero.addEventListener('focusin', function (e) {
+      if (keyboardFocus(e.target)) { focused = true; stop(); }
+    });
+    hero.addEventListener('focusout', function (e) {
+      if (!hero.contains(e.relatedTarget)) { focused = false; start(); }
+    });
+
+    window.addEventListener('load', function () { preload(1); });
+    start();
   }
 
   /* ---------- Scroll reveal ---------- */
